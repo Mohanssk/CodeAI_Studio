@@ -74,7 +74,7 @@ app.post('/api/generate', async (req, res) => {
         const codeContent = data.code || "";
 
         // 7. Define the folder and file path
-        const folderName = path.join(__dirname, "code");
+        const folderName = path.join(__dirname, "tmp");
         if (!fs.existsSync(folderName)) {
             fs.mkdirSync(folderName, { recursive: true });
         }
@@ -106,7 +106,7 @@ app.post('/api/generate', async (req, res) => {
 app.get('/api/download/:filename', (req, res) => {
     // path.basename sanitizes the input to prevent directory traversal
     const filename = path.basename(req.params.filename);
-    const filePath = path.join(__dirname, 'code', filename);
+    const filePath = path.join(__dirname, 'tmp', filename);
 
     // Check if the file actually exists before downloading
     if (!fs.existsSync(filePath)) {
