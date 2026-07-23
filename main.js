@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
@@ -15,6 +14,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = 3000;
+const isVercel = Boolean(process.env.VERCEL);
 
 // Middleware
 app.use(cors());
@@ -31,7 +31,17 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 1. Initialize the client
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = process.env.GEMINI_API_KEY
+    ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    : null;
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        service: 'code_file_generator',
+        environment: isVercel ? 'vercel' : 'local',
+    });
+});
 
 // 2. Create the API Endpoint
 app.post('/api/generate', async (req, res) => {
@@ -39,6 +49,12 @@ app.post('/api/generate', async (req, res) => {
 
     if (!customFilenameBase || !userRequest) {
         return res.status(400).json({ error: "Missing filename or prompt." });
+    }
+
+    if (!ai) {
+        return res.status(500).json({
+            error: 'GEMINI_API_KEY is not configured. Set it in your Vercel project environment variables.',
+        });
     }
 
     try {
@@ -72,25 +88,13 @@ app.post('/api/generate', async (req, res) => {
         const data = JSON.parse(cleanText);
         const extension = data.extension || ".txt";
         const codeContent = data.code || "";
-
-        // 7. Define the folder and file path
-        const folderName = path.join(__dirname, "tmp");
-        if (!fs.existsSync(folderName)) {
-            fs.mkdirSync(folderName, { recursive: true });
-        }
-
         const finalFilename = customFilenameBase + extension;
-        const filePath = path.join(folderName, finalFilename);
-
-        // 8. Save the file
-        fs.writeFileSync(filePath, codeContent, 'utf-8');
-        
-        console.log(`Success! Saved to ${filePath}`);
+        console.log(`Success! Generated ${finalFilename}`);
 
         // Send success back to the frontend
         res.json({
             success: true,
-            message: `Code saved to ${filePath}`,
+            message: `Code generated for ${finalFilename}`,
             extension: extension,
             code: codeContent,
             filename: finalFilename // Passing this back so the frontend knows what to request
@@ -102,32 +106,13 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
-// 9. Create the Download Endpoint
-app.get('/api/download/:filename', (req, res) => {
-    // path.basename sanitizes the input to prevent directory traversal
-    const filename = path.basename(req.params.filename);
-    const filePath = path.join(__dirname, 'tmp', filename);
+export default app;
 
-    // Check if the file actually exists before downloading
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "File not found." });
-    }
-
-    // res.download sets the headers to prompt a file download in the browser
-    res.download(filePath, filename, (err) => {
-        if (err) {
-            console.error("Error downloading file:", err);
-            // Only send error response if headers haven't been sent yet
-            if (!res.headersSent) {
-                res.status(500).json({ error: "Failed to download file." });
-            }
-        }
+// Start the server only for local development.
+if (!isVercel) {
+    app.listen(port, () => {
+        console.log(`Backend running! API is at http://localhost:${port}/api/generate`);
+        console.log(`Health check available at http://localhost:${port}/api/health`);
+        console.log(`Frontend is available at http://localhost:${port}`);
     });
-});
-
-// Start the server
-app.listen(port, () => {
-    console.log(`Backend running! API is at http://localhost:${port}/api/generate`);
-    console.log(`Downloads available at http://localhost:${port}/api/download/<filename>`);
-    console.log(`Frontend will be available at http://localhost:${port} once you run the Python script.`);
-});
+}

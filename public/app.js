@@ -97,14 +97,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle Download Button
   downloadBtn.addEventListener('click', () => {
-    if (!currentFilename) return;
-    const downloadUrl = `/api/download/${encodeURIComponent(currentFilename)}`;
+    if (!currentFilename || !currentCode) return;
+
+    const blob = new Blob([currentCode], { type: 'text/plain;charset=utf-8' });
+    const downloadUrl = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = downloadUrl;
     anchor.download = currentFilename;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
+    URL.revokeObjectURL(downloadUrl);
     showToast('Download started.', 'success');
   });
 

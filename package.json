@@ -1,10 +1,12 @@
 {
   "name": "code_file_generator",
   "version": "1.0.0",
-  "description": "",
+  "description": "AI code generator with Express API and static frontend, deployable on Vercel",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon main.js",
+    "start": "node main.js",
+    "test": "echo \"No tests configured\""
   },
   "keywords": [],
   "author": "",
@@ -14,8 +16,9 @@
     "@google/genai": "^2.13.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "fs": "^0.0.1-security",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
     "nodemon": "^3.1.14"
   }
 }
