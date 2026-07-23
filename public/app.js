@@ -51,11 +51,23 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json')
+        ? await response.json()
+        : await response.text();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate code from server.');
+        const errorMessage = typeof payload === 'string'
+          ? `Server returned ${response.status}. Verify Vercel API routing.`
+          : payload.error;
+        throw new Error(errorMessage || 'Failed to generate code from server.');
       }
+
+      if (typeof payload === 'string') {
+        throw new Error('Server did not return JSON. Verify API deployment configuration.');
+      }
+
+      const data = payload;
 
       // Render generated data
       currentCode = data.code || '';
