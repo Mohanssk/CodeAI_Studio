@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentCode = '';
   let currentFilename = '';
+  let isGenerating = false;
 
   downloadBtn.title = 'Generate a file first';
 
@@ -27,6 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle form submission
   generatorForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (isGenerating) {
+      return;
+    }
 
     const customFilenameBase = filenameInput.value.trim();
     const userRequest = promptInput.value.trim();
@@ -38,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // UI Loading state
     setLoading(true);
+    isGenerating = true;
 
     try {
       const response = await fetch('/api/generate', {
@@ -92,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Generation Error:', err);
       showToast(err.message || 'An unexpected error occurred.', 'error');
     } finally {
+      isGenerating = false;
       setLoading(false);
     }
   });
@@ -126,6 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper functions
   function setLoading(isLoading) {
     generateBtn.disabled = isLoading;
+    filenameInput.disabled = isLoading;
+    promptInput.disabled = isLoading;
+    generatorForm.setAttribute('aria-busy', String(isLoading));
     downloadBtn.disabled = isLoading || !currentFilename;
     downloadBtn.title = currentFilename ? 'Download generated file' : 'Generate a file first';
     if (!isLoading && currentFilename) {
