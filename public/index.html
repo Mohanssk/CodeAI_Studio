@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>AI Code Generator Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1.1">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>CodeAI Studio</h1>
+          <span class="version-badge">v1.0</span>
+        </div>
+      </div>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        <span>API Connected</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <!-- Config & Prompt Panel -->
+      <section class="panel input-panel">
+        <form id="generator-form" class="generator-form">
+          <div class="panel-header">
+            <h2>Configuration</h2>
+            <p>Describe what you need and specify target filename</p>
+          </div>
+
+          <div class="form-group">
+            <label for="filename-base">
+              Filename Base
+              <span class="info-tooltip" title="The extension will be automatically detected by AI">i</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                type="text" 
+                id="filename-base" 
+                placeholder="e.g. data_processor or auth_controller" 
+                required
+                autocomplete="off"
+              />
+              <span class="input-suffix">.[auto]</span>
+            </div>
+          </div>
+
+          <div class="form-group flex-grow">
+            <label for="user-prompt">Prompt / Prompt Requirements</label>
+            <textarea 
+              id="user-prompt" 
+              placeholder="e.g. Write a Python script using pandas to clean a CSV file by removing null values and normalizing date columns..." 
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="generate-btn" class="btn btn-primary">
+              <span class="btn-text">Generate Code</span>
+              <span class="btn-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </span>
+              <div class="spinner hidden"></div>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Output & Preview Panel -->
+      <section class="panel output-panel">
+        <div class="panel-header flex-header">
+          <div>
+            <h2>Generated Output</h2>
+            <p id="file-path-display">No code generated yet</p>
+          </div>
+          <div class="output-actions">
+            <span id="extension-badge" class="extension-badge hidden">.txt</span>
+            <button id="copy-btn" class="btn btn-secondary btn-icon-only" disabled title="Copy Code">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            <button id="download-btn" class="btn btn-secondary btn-icon-only download-action" disabled title="Download File">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="toast-message" class="toast hidden"></div>
+
+        <div class="editor-container">
+          <div class="editor-bar">
+            <div class="window-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <span id="editor-filename" class="editor-filename">untitled</span>
+          </div>
+          <pre class="code-display"><code id="code-output">// Generated code will appear here...
+// Enter a filename base and prompt on the left to begin.</code></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js?v=1.1" defer></script>
+</body>
+</html>
