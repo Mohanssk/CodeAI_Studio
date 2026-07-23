@@ -73,7 +73,7 @@ app.post('/api/generate', async (req, res) => {
 
         // 4. Get the response from Gemini
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash", 
+            model: "gemini-3.6-flash", 
             contents: prompt,
         });
 
