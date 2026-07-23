@@ -15,10 +15,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 const isVercel = Boolean(process.env.VERCEL);
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const requestBuckets = new Map();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.set('trust proxy', true);
 app.use((req, res, next) => {
     if (req.method === 'GET' && (req.path === '/' || req.path.endsWith('.html'))) {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -43,6 +47,38 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+function getClientKey(req) {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+        return forwardedFor.split(',')[0].trim();
+    }
+
+    return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+function isRateLimited(req) {
+    const clientKey = getClientKey(req);
+    const now = Date.now();
+    const bucket = requestBuckets.get(clientKey);
+
+    if (!bucket || bucket.resetAt <= now) {
+        requestBuckets.set(clientKey, {
+            count: 1,
+            resetAt: now + RATE_LIMIT_WINDOW_MS,
+        });
+        return null;
+    }
+
+    bucket.count += 1;
+    requestBuckets.set(clientKey, bucket);
+
+    if (bucket.count > RATE_LIMIT_MAX_REQUESTS) {
+        return Math.ceil((bucket.resetAt - now) / 1000);
+    }
+
+    return null;
+}
+
 // 2. Create the API Endpoint
 app.post('/api/generate', async (req, res) => {
     const { customFilenameBase, userRequest } = req.body;
@@ -54,6 +90,15 @@ app.post('/api/generate', async (req, res) => {
     if (!ai) {
         return res.status(500).json({
             error: 'GEMINI_API_KEY is not configured. Set it in your Vercel project environment variables.',
+        });
+    }
+
+    const retryAfterSeconds = isRateLimited(req);
+    if (retryAfterSeconds) {
+        res.setHeader('Retry-After', String(retryAfterSeconds));
+        return res.status(429).json({
+            error: 'Too many generate requests. Please wait before trying again.',
+            retryAfterSeconds,
         });
     }
 
@@ -103,6 +148,13 @@ app.post('/api/generate', async (req, res) => {
     } catch (error) {
         console.error("Server Error:", error.message);
         res.status(500).json({ error: error.message || "Failed to generate code." });
+    } finally {
+        const clientKey = getClientKey(req);
+        const bucket = requestBuckets.get(clientKey);
+
+        if (bucket && bucket.resetAt <= Date.now()) {
+          requestBuckets.delete(clientKey);
+        }
     }
 });
 
